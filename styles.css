@@ -8,3 +8,37 @@
 .repo-controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,.42fr);gap:14px;margin:27px 0 20px}.repo-controls[hidden],.repo-error[hidden]{display:none!important}.repo-controls label{display:grid;gap:7px;color:#9bb0ae;font:9px var(--mono);letter-spacing:.5px;text-transform:uppercase}.repo-controls input,.repo-controls select{width:100%;min-height:44px;padding:10px 12px;border:1px solid rgba(131,240,206,.2);border-radius:2px;background:#0b1c23;color:var(--text);font:12px var(--sans);text-transform:none;letter-spacing:normal}.repo-controls input::placeholder{color:#708786}.repo-controls input:focus-visible,.repo-controls select:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-color:var(--mint)}.repo-status{display:flex;align-items:center;gap:10px;min-height:26px;margin:16px 0;color:#91a7a4;font:10px var(--mono)}.repo-status[hidden]{display:none}.repo-spinner{width:14px;height:14px;flex:none;border:2px solid rgba(131,240,206,.22);border-top-color:var(--mint);border-radius:50%;animation:repo-spin .8s linear infinite}@keyframes repo-spin{to{transform:rotate(360deg)}}.repo-error{margin:22px 0;padding:18px 20px;border:1px solid rgba(104,220,232,.28);background:rgba(11,28,35,.8);color:#b4c8c5;font-size:12px}.repo-error p{margin:0 0 12px}.repo-error a{color:var(--mint);text-decoration:underline;text-underline-offset:3px}.repo-retry{margin-left:16px;padding:8px 12px;border:1px solid rgba(131,240,206,.35);border-radius:2px;background:transparent;color:var(--mint);font:10px var(--mono);cursor:pointer}.repo-retry:hover:not(:disabled){background:rgba(131,240,206,.08)}.repo-retry:focus-visible{outline:2px solid var(--mint);outline-offset:3px}.repo-retry:disabled{opacity:.55;cursor:wait}.repo-card{min-width:0}.repo-card .project-art{height:160px}.repo-card .art-code{white-space:pre-line}.repo-card .project-info{min-height:230px}.repo-fork-label{color:#77c9c5;font-size:8px}.repo-description{overflow-wrap:anywhere}.repo-meta{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px;color:#a4bab7;font-size:10px}.repo-language{color:var(--mint)}.repo-stars{color:#d7c58c}.repo-updated{margin:0 0 15px!important;color:#819795!important;font:9px var(--mono)!important}.repo-action{margin-top:auto}
 @media(max-width:560px){.repo-controls{grid-template-columns:1fr;gap:11px;margin:22px 0 16px}.repo-card .project-art{height:155px}.repo-card .project-info{min-height:0}.repo-error{padding:15px}.repo-retry{display:block;margin:14px 0 0}}
 @media(prefers-reduced-motion:reduce){.repo-spinner{animation:none;border-top-color:var(--mint)}}
+.repo-count{display:flex;align-items:baseline;gap:8px;margin:18px 0 0;color:#9db4b0;font:10px var(--mono);letter-spacing:.35px}.repo-count[hidden]{display:none}.repo-count>span:first-child{color:var(--mint);font-size:19px;font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums}
+
+/* Focus-area headline rotation */
+.headline-rotation{display:block;inline-size:20ch;max-inline-size:100%;block-size:1.2em;overflow:hidden;color:var(--mint);font-size:clamp(27px,5.4vw,61px);line-height:1.2;letter-spacing:-.055em;white-space:nowrap}
+.headline-rotation-visual{display:block;opacity:1;transform:translateY(0);transition:opacity .32s ease,transform .42s cubic-bezier(.2,.7,.2,1)}
+.headline-rotation-visual.is-exiting{opacity:0;transform:translateY(-.65em)}
+.headline-rotation-visual.is-entering{opacity:0;transform:translateY(.65em)}
+
+/* Repository carousel: native scrolling keeps swipe and touch scrolling natural. */
+.repo-carousel[hidden]{display:none}
+.repo-carousel-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:18px;margin:10px 0 14px}
+.repo-position{min-width:62px;margin:0;color:#93aaa7;text-align:right;font-size:10px;font-variant-numeric:tabular-nums}
+.repo-carousel-actions{display:flex;gap:8px}
+.repo-carousel-button{display:grid;width:42px;height:42px;place-items:center;border:1px solid rgba(131,240,206,.28);border-radius:50%;background:rgba(11,28,35,.85);color:var(--mint);font-size:18px;cursor:pointer;transition:background .2s,border-color .2s,box-shadow .2s,opacity .2s}
+.repo-carousel-button:hover:not(:disabled){border-color:var(--mint);background:rgba(131,240,206,.1);box-shadow:0 0 18px rgba(104,220,232,.14)}
+.repo-carousel-button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.repo-carousel-button:disabled{opacity:.42;cursor:not-allowed}
+.repo-viewport{overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scroll-padding-inline:2px;scrollbar-width:thin;scrollbar-color:rgba(131,240,206,.35) rgba(131,240,206,.06);-webkit-overflow-scrolling:touch}
+.repo-viewport:focus-visible{outline:2px solid var(--mint);outline-offset:4px}
+.repo-carousel .project-grid{display:flex;gap:23px;grid-template-columns:none;width:100%;padding:8px 2px 13px}
+.repo-carousel .repo-card{position:relative;isolation:isolate;overflow:hidden;flex:0 0 calc((100% - 46px)/3);scroll-snap-align:start}
+.repo-carousel .repo-card>.project-art,.repo-carousel .repo-card>.project-info{position:relative;z-index:1}
+.repo-carousel .repo-card::before{position:absolute;z-index:2;inset:0;padding:1px;content:"";pointer-events:none;opacity:0;background:linear-gradient(108deg,transparent 35%,rgba(104,220,232,.55) 49%,rgba(131,240,206,.28) 52%,transparent 67%);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor}
+.repo-carousel .repo-card:hover::before,.repo-carousel .repo-card:focus-within::before{animation:border-light-sweep 1s ease-out both}
+.repo-carousel .repo-card:hover{box-shadow:0 10px 38px rgba(31,169,150,.15),0 0 20px rgba(104,220,232,.08)}
+.button-primary:hover,.button-primary:focus-visible{animation:button-flash .72s ease-out}
+.section-kicker::after{width:26px;height:1px;content:"";background:linear-gradient(90deg,rgba(131,240,206,.12),var(--mint),rgba(104,220,232,.08));opacity:.65}
+.motion-enabled .section-kicker.is-visible::after{animation:heading-sweep 1.25s .2s ease-out both}
+@keyframes border-light-sweep{0%{opacity:0;transform:translateX(-75%)}18%{opacity:1}100%{opacity:0;transform:translateX(75%)}}
+@keyframes button-flash{0%,100%{box-shadow:0 0 26px rgba(131,240,206,.11)}40%{box-shadow:0 0 34px rgba(104,220,232,.34),0 0 10px rgba(131,240,206,.3)}}
+@keyframes heading-sweep{0%{opacity:.25;transform:translateX(-8px)}45%{opacity:1}100%{opacity:.6;transform:translateX(8px)}}
+@media(max-width:900px){.repo-carousel .repo-card{flex-basis:calc((100% - 23px)/2)}}
+@media(max-width:560px){.headline-rotation{font-size:clamp(25px,7.4vw,36px);inline-size:20ch}.repo-carousel .project-grid{gap:15px}.repo-carousel .repo-card{flex-basis:100%}.repo-carousel .repo-card .project-art{height:155px}.repo-carousel .repo-card .project-info{min-height:0}.repo-carousel-toolbar{margin-top:5px}}
+@media(prefers-reduced-motion:reduce){.repo-viewport{scroll-behavior:auto;scroll-snap-type:x proximity}.repo-carousel .repo-card:hover::before,.repo-carousel .repo-card:focus-within::before{animation:none}.button-primary:hover,.button-primary:focus-visible{animation:none}}

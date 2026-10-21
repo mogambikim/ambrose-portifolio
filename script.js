@@ -52,8 +52,77 @@
     }, { passive: true });
   }
 
+  const headlineVisual = document.querySelector('.headline-rotation-visual');
+  const headlineAccessible = document.querySelector('#headline-rotation-accessible');
+  const heroCopy = document.querySelector('.hero-copy');
+  if (headlineVisual && headlineAccessible) {
+    const phrases = ['Software Development', 'IT Support', 'Networking', 'Data Analysis'];
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let phraseIndex = 0;
+    let headlineTimer = null;
+    let headlineTransitionTimer = null;
+
+    const showHeadlinePhrase = (index, animate = true) => {
+      if (headlineTransitionTimer) window.clearTimeout(headlineTransitionTimer);
+      phraseIndex = index;
+      const update = () => {
+        headlineVisual.textContent = phrases[phraseIndex];
+        headlineAccessible.textContent = phrases[phraseIndex];
+        headlineVisual.classList.remove('is-entering');
+        if (animate && !motionPreference.matches) {
+          headlineVisual.classList.add('is-entering');
+          requestAnimationFrame(() => requestAnimationFrame(() => headlineVisual.classList.remove('is-entering')));
+        }
+      };
+
+      if (animate && !motionPreference.matches) {
+        headlineVisual.classList.add('is-exiting');
+        headlineTransitionTimer = window.setTimeout(() => {
+          headlineTransitionTimer = null;
+          headlineVisual.classList.remove('is-exiting');
+          update();
+        }, 320);
+      } else update();
+    };
+
+    const stopHeadline = () => {
+      if (headlineTimer) window.clearInterval(headlineTimer);
+      headlineTimer = null;
+    };
+    const startHeadline = () => {
+      stopHeadline();
+      if (motionPreference.matches || document.hidden) return;
+      headlineTimer = window.setInterval(() => showHeadlinePhrase((phraseIndex + 1) % phrases.length), 5000);
+    };
+
+    if (heroCopy) {
+      heroCopy.addEventListener('mouseenter', stopHeadline);
+      heroCopy.addEventListener('mouseleave', startHeadline);
+      heroCopy.addEventListener('focusin', stopHeadline);
+      heroCopy.addEventListener('focusout', event => {
+        if (!heroCopy.contains(event.relatedTarget)) startHeadline();
+      });
+    }
+    document.addEventListener('visibilitychange', startHeadline);
+    motionPreference.addEventListener('change', event => {
+      if (event.matches) {
+        stopHeadline();
+        showHeadlinePhrase(0, false);
+      } else startHeadline();
+    });
+    startHeadline();
+  }
+
   const repositoryGrid = document.querySelector('#repository-grid');
+  const repositoryCarousel = document.querySelector('#repo-carousel');
+  const repositoryViewport = document.querySelector('#repo-viewport');
+  const repositoryPosition = document.querySelector('#repo-position');
+  const repositoryPrevious = document.querySelector('#repo-previous');
+  const repositoryNext = document.querySelector('#repo-next');
   const repositoryStatus = document.querySelector('#repo-status');
+  const repositoryCount = document.querySelector('#repo-count');
+  const repositoryCountNumber = document.querySelector('#repo-count-number');
+  const repositoryCountAccessible = document.querySelector('#repo-count-accessible');
   const repositoryControls = document.querySelector('#repo-controls');
   const repositoryError = document.querySelector('#repo-error');
   const repositoryErrorMessage = document.querySelector('#repo-error-message');
@@ -61,9 +130,14 @@
   const repositoryLanguage = document.querySelector('#repo-language');
   const repositoryRetry = document.querySelector('#repo-retry');
 
-  if (repositoryGrid && repositoryStatus && repositoryControls && repositoryError && repositorySearch && repositoryLanguage && repositoryRetry) {
+  if (repositoryGrid && repositoryCarousel && repositoryViewport && repositoryPosition && repositoryPrevious && repositoryNext && repositoryStatus && repositoryControls && repositoryError && repositorySearch && repositoryLanguage && repositoryRetry) {
     const apiUrl = 'https://api.github.com/users/mogambikim/repos?sort=updated&per_page=100';
     let repositories = [];
+    let filteredRepositories = [];
+    let renderedRepositoryCount = 0;
+    let activeRepositoryIndex = 0;
+    let scrollFrame = 0;
+    const repositoryBatchSize = 8;
 
     const makeElement = (tag, className, value) => {
       const element = document.createElement(tag);
@@ -77,8 +151,32 @@
       else revealObserver.observe(element);
     };
 
+    const showRepositoryCount = count => {
+      if (!repositoryCount || !repositoryCountNumber || !repositoryCountAccessible) return;
+      repositoryCount.hidden = false;
+      repositoryCountNumber.textContent = '0';
+      repositoryCountAccessible.textContent = `${count} public repositories on GitHub.`;
+      if (reducedMotion || !('requestAnimationFrame' in window)) {
+        repositoryCountNumber.textContent = String(count);
+        return;
+      }
+
+      const startedAt = performance.now();
+      const duration = 850;
+      const updateCount = now => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const easedProgress = 1 - (1 - progress) ** 3;
+        repositoryCountNumber.textContent = String(Math.round(count * easedProgress));
+        if (progress < 1) window.requestAnimationFrame(updateCount);
+      };
+      window.requestAnimationFrame(updateCount);
+    };
+
     const createRepositoryCard = (repository, index) => {
       const card = makeElement('article', 'project-card repo-card reveal');
+      card.setAttribute('role', 'group');
+      card.setAttribute('aria-roledescription', 'slide');
+      card.setAttribute('aria-label', `${index + 1} of ${filteredRepositories.length}: ${repository.name || 'Unnamed repository'}`);
       const artClass = index % 2 === 0 ? 'art-one' : 'art-two';
       const art = makeElement('div', `project-art ${artClass}`);
       art.setAttribute('aria-hidden', 'true');
@@ -120,31 +218,84 @@
       return card;
     };
 
+    const updateCarouselControls = () => {
+      const total = filteredRepositories.length;
+      const current = total ? Math.min(activeRepositoryIndex + 1, total) : 0;
+      repositoryPosition.textContent = `${current} of ${total}`;
+      repositoryPrevious.disabled = current <= 1;
+      repositoryNext.disabled = current >= total;
+    };
+
+    const appendRepositoryBatch = () => {
+      const nextEnd = Math.min(renderedRepositoryCount + repositoryBatchSize, filteredRepositories.length);
+      for (let index = renderedRepositoryCount; index < nextEnd; index += 1) {
+        const card = createRepositoryCard(filteredRepositories[index], index);
+        if (card) repositoryGrid.append(card);
+      }
+      renderedRepositoryCount = nextEnd;
+      updateCarouselControls();
+    };
+
+    const scrollToRepository = index => {
+      if (index < 0 || index >= filteredRepositories.length) return;
+      while (renderedRepositoryCount <= index) appendRepositoryBatch();
+      const card = repositoryGrid.children[index];
+      if (!card) return;
+      activeRepositoryIndex = index;
+      updateCarouselControls();
+      if (renderedRepositoryCount < filteredRepositories.length && index >= renderedRepositoryCount - 4) appendRepositoryBatch();
+      card.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'start' });
+    };
+
+    const updateActiveRepository = () => {
+      scrollFrame = 0;
+      const cards = repositoryGrid.children;
+      if (!cards.length) return;
+      const viewportLeft = repositoryViewport.getBoundingClientRect().left;
+      let nearestIndex = 0;
+      let nearestDistance = Infinity;
+      Array.from(cards).forEach((card, index) => {
+        const distance = Math.abs(card.getBoundingClientRect().left - viewportLeft);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = index;
+        }
+      });
+      activeRepositoryIndex = nearestIndex;
+      updateCarouselControls();
+
+      if (renderedRepositoryCount < filteredRepositories.length && nearestIndex >= renderedRepositoryCount - 4) {
+        appendRepositoryBatch();
+      }
+    };
+
     const renderRepositories = () => {
       const searchTerm = repositorySearch.value.trim().toLocaleLowerCase();
       const language = repositoryLanguage.value;
-      const filtered = repositories.filter(repository => {
+      filteredRepositories = repositories.filter(repository => {
         const searchable = `${repository.name} ${repository.description || ''}`.toLocaleLowerCase();
         return (!searchTerm || searchable.includes(searchTerm)) && (!language || repository.language === language);
       });
 
       repositoryGrid.replaceChildren();
-      filtered.forEach((repository, index) => {
-        const card = createRepositoryCard(repository, index);
-        if (card) repositoryGrid.append(card);
-      });
+      renderedRepositoryCount = 0;
+      activeRepositoryIndex = 0;
+      repositoryViewport.scrollLeft = 0;
+      repositoryCarousel.hidden = filteredRepositories.length === 0;
+      if (filteredRepositories.length) appendRepositoryBatch();
 
       const shown = repositoryGrid.childElementCount;
       repositoryStatus.hidden = false;
       repositoryStatus.classList.remove('is-loading');
       repositoryStatus.textContent = shown
-        ? `Showing ${shown} of ${repositories.length} public repositories.`
+        ? `Showing ${filteredRepositories.length} matching public repositories.`
         : 'No repositories match these filters.';
     };
 
     const setLoadError = error => {
       repositoryStatus.hidden = true;
       repositoryControls.hidden = true;
+      repositoryCarousel.hidden = true;
       repositoryGrid.replaceChildren();
       repositoryError.hidden = false;
       repositoryErrorMessage.textContent = error.message;
@@ -154,10 +305,12 @@
       repositoryRetry.disabled = true;
       repositoryError.hidden = true;
       repositoryControls.hidden = true;
+      repositoryCarousel.hidden = true;
       repositoryGrid.replaceChildren();
       repositoryStatus.hidden = false;
       repositoryStatus.classList.add('is-loading');
       repositoryStatus.innerHTML = '<span class="repo-spinner" aria-hidden="true"></span> Loading public repositories…';
+      if (repositoryCount) repositoryCount.hidden = true;
 
       try {
         const response = await fetch(apiUrl, { headers: { Accept: 'application/vnd.github+json' } });
@@ -174,6 +327,7 @@
         repositories = data
           .filter(repository => repository && !repository.archived && repository.html_url)
           .sort((a, b) => Date.parse(b.updated_at || '') - Date.parse(a.updated_at || ''));
+        showRepositoryCount(repositories.length);
 
         const languages = [...new Set(repositories.map(repository => repository.language).filter(Boolean))]
           .sort((a, b) => a.localeCompare(b));
@@ -200,6 +354,21 @@
 
     repositorySearch.addEventListener('input', renderRepositories);
     repositoryLanguage.addEventListener('change', renderRepositories);
+    repositoryPrevious.addEventListener('click', () => scrollToRepository(activeRepositoryIndex - 1));
+    repositoryNext.addEventListener('click', () => scrollToRepository(activeRepositoryIndex + 1));
+    repositoryViewport.addEventListener('scroll', () => {
+      if (!scrollFrame) scrollFrame = window.requestAnimationFrame(updateActiveRepository);
+    }, { passive: true });
+    repositoryViewport.addEventListener('keydown', event => {
+      if (event.target !== repositoryViewport) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        scrollToRepository(activeRepositoryIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        scrollToRepository(activeRepositoryIndex + 1);
+      }
+    });
     repositoryRetry.addEventListener('click', loadRepositories);
     loadRepositories();
   }
