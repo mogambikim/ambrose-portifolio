@@ -1,0 +1,9 @@
+{
+  "name": "ambrose-mogambi-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ambrose Mogambi's professional portfolio",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}
