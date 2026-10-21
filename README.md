@@ -35,8 +35,8 @@ Vercel will run the build on each deployment. The included `vercel.json` configu
 ## Personalize before publishing
 
 - Replace the portrait placeholder in `index.html` with a professional image and meaningful alt text. Keep the supplied placeholder until then.
-- Add project names, short accurate descriptions, and direct repository links only after checking each repository.
+- The project cards in `index.html` reflect features checked against repository source. Keep descriptions tied to working code and leave demo links off when a running deployment cannot be verified.
 - Add a CV file to the project and link it if you want a downloadable resume.
-- Confirm current education wording and any project details you add.
+- Confirm the current education status before adding dates or completion wording.
 
-There were no CV files in the supplied project directory at build time. No credentials, APIs, backend services, or environment variables are used.
+There were no CV files in the supplied project directory at build time. The portfolio itself needs no credentials, APIs, backend services, or environment variables. External portfolio entries may rely on their own environment configuration; no secrets are included here.
