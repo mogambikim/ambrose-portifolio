@@ -18,6 +18,42 @@
   const year = document.querySelector('#year');
   if (year) year.textContent = String(new Date().getFullYear());
 
+  const validWhatsAppUrl = (value, kind) => {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    try {
+      const url = new URL(value.trim());
+      if (url.protocol !== 'https:') return null;
+      if (kind === 'group' && url.hostname === 'chat.whatsapp.com' && url.pathname.length > 1) return url.href;
+      if (kind === 'contact' && url.hostname === 'wa.me' && /^\/[0-9]{8,15}\/?$/.test(url.pathname)) return url.href;
+      if (kind === 'contact' && url.hostname === 'api.whatsapp.com' && url.pathname === '/send' && /^[0-9]{8,15}$/.test(url.searchParams.get('phone') || '')) return url.href;
+    } catch (error) {
+      return null;
+    }
+    return null;
+  };
+
+  const whatsappConfig = window.AMBROSE_PORTFOLIO_CONFIG || {};
+  const whatsappGroupUrl = validWhatsAppUrl(whatsappConfig.whatsappGroupUrl, 'group');
+  const whatsappContactUrl = validWhatsAppUrl(whatsappConfig.whatsappContactUrl, 'contact');
+  const enableConfiguredWhatsAppLink = (id, placeholderId, href) => {
+    const link = document.querySelector(`#${id}`);
+    const placeholder = document.querySelector(`#${placeholderId}`);
+    if (!link || !placeholder || !href) return;
+    link.href = href;
+    link.hidden = false;
+    placeholder.hidden = true;
+  };
+  enableConfiguredWhatsAppLink('whatsapp-group-link', 'whatsapp-group-placeholder', whatsappGroupUrl);
+  enableConfiguredWhatsAppLink('whatsapp-contact-link', 'whatsapp-contact-placeholder', whatsappContactUrl);
+  const whatsappFloat = document.querySelector('#whatsapp-float');
+  if (whatsappFloat && whatsappContactUrl) {
+    whatsappFloat.href = whatsappContactUrl;
+    whatsappFloat.target = '_blank';
+    whatsappFloat.rel = 'noopener noreferrer';
+    whatsappFloat.setAttribute('aria-label', 'Hire Ambrose on WhatsApp');
+    whatsappFloat.classList.add('is-configured');
+  }
+
   const revealItems = document.querySelectorAll('.reveal');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let revealObserver = null;
@@ -56,7 +92,7 @@
   const headlineAccessible = document.querySelector('#headline-rotation-accessible');
   const heroCopy = document.querySelector('.hero-copy');
   if (headlineVisual && headlineAccessible) {
-    const phrases = ['Software Development', 'IT Support', 'Networking', 'Data Analysis'];
+    const phrases = ['Software Development', 'IT Support & Networking', 'Video Editing & Color Grading', 'Graphic Design & Branding', 'Data & Technology'];
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
     let phraseIndex = 0;
     let headlineTimer = null;
@@ -92,7 +128,7 @@
     const startHeadline = () => {
       stopHeadline();
       if (motionPreference.matches || document.hidden) return;
-      headlineTimer = window.setInterval(() => showHeadlinePhrase((phraseIndex + 1) % phrases.length), 5000);
+      headlineTimer = window.setInterval(() => showHeadlinePhrase((phraseIndex + 1) % phrases.length), 5800);
     };
 
     if (heroCopy) {
@@ -111,6 +147,35 @@
       } else startHeadline();
     });
     startHeadline();
+  }
+
+  const galleryFilters = document.querySelectorAll('[data-gallery-filter]');
+  const galleryCards = document.querySelectorAll('[data-gallery-category]');
+  const galleryStatus = document.querySelector('#gallery-status');
+  const softwareGalleryNote = document.querySelector('#software-gallery-note');
+  if (galleryFilters.length && galleryStatus) {
+    galleryFilters.forEach(filterButton => {
+      filterButton.addEventListener('click', () => {
+        const category = filterButton.dataset.galleryFilter;
+        let visibleCount = 0;
+        galleryFilters.forEach(button => {
+          const selected = button === filterButton;
+          button.classList.toggle('is-active', selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        galleryCards.forEach(card => {
+          const visible = category !== 'software' && (category === 'all' || card.dataset.galleryCategory === category);
+          card.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        if (softwareGalleryNote) softwareGalleryNote.hidden = category !== 'software';
+        galleryStatus.textContent = category === 'software'
+          ? 'Software work is listed separately in the GitHub Projects section.'
+          : category === 'all'
+            ? 'Sample slots only — no client work or finished creative samples are shown yet.'
+            : `${visibleCount} replaceable sample ${visibleCount === 1 ? 'slot' : 'slots'} shown. Add genuine work before publishing project claims.`;
+      });
+    });
   }
 
   const repositoryGrid = document.querySelector('#repository-grid');
